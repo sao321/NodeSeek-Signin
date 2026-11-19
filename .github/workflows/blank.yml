@@ -1,8 +1,8 @@
 name: nodeseek鸡腿签到
 
-on: 
+on:
   schedule:
-    - cron: '01 01 * * *'  # 每天凌晨 12 点执行 
+    - cron: '01 01 * * *'  # 每天凌晨 12 点执行
   workflow_dispatch:
 
 jobs:
@@ -11,12 +11,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
-      
+        uses: actions/checkout@v4
+
       - name: Set up Python environment
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.11.8'
+          python-version: '3.11'
 
       - name: install
         run: pip install requests curl_cffi
