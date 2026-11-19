@@ -3,16 +3,20 @@ import os
 import sys
 from curl_cffi import requests
 
-NS_RANDOM = os.environ.get("NS_RANDOM","false")
-NS_COOKIE = os.environ.get("NS_COOKIE","")
+NS_RANDOM = os.environ.get("NS_RANDOM", "false")
+NS_COOKIE = os.environ.get("NS_COOKIE", "")
 COOKIE = os.environ.get("COOKIE", "")
 COOKIE_ENV = NS_COOKIE or COOKIE
 
 pushplus_token = os.environ.get("PUSHPLUS_TOKEN")
-telegram_bot_token = os.environ.get("TELEGRAM_BOT_TOKEN","")
-chat_id = os.environ.get("CHAT_ID","")
-telegram_api_url = os.environ.get("TELEGRAM_API_URL","https://api.telegram.org") # 代理api,可以使用自己的反代
-def telegram_Bot(token,chat_id,message):
+telegram_bot_token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+chat_id = os.environ.get("CHAT_ID", "")
+telegram_api_url = os.environ.get("TELEGRAM_API_URL", "https://api.telegram.org")  # 代理api,可以使用自己的反代
+
+hadsend = False
+
+
+def telegram_Bot(token, chat_id, message):
     url = f'{telegram_api_url}/bot{token}/sendMessage'
     data = {
         'chat_id': chat_id,
@@ -20,8 +24,10 @@ def telegram_Bot(token,chat_id,message):
     }
     r = requests.post(url, json=data)
     response_data = r.json()
-    msg = response_data['ok']
+    msg = response_data.get('ok')
     print(f"telegram推送结果：{msg}\n")
+
+
 def pushplus_ts(token, rw, msg):
     url = 'https://www.pushplus.plus/send/'
     data = {
@@ -33,21 +39,24 @@ def pushplus_ts(token, rw, msg):
     msg = r.json().get('msg', None)
     print(f'pushplus推送结果：{msg}\n')
 
+
 def load_send():
     global send
     global hadsend
     cur_path = os.path.abspath(os.path.dirname(__file__))
     sys.path.append(cur_path)
-    if os.path.exists(cur_path + "/notify.py"):
+    if os.path.exists(os.path.join(cur_path, "notify.py")):
         try:
             from notify import send
-            hadsend=True
-        except:
+            hadsend = True
+        except Exception:
             print("加载notify.py的通知服务失败，请检查~")
-            hadsend=False
+            hadsend = False
     else:
         print("加载通知服务失败,缺少notify.py文件")
-        hadsend=False
+        hadsend = False
+
+
 load_send()
 
 if COOKIE_ENV:
@@ -66,15 +75,18 @@ if COOKIE_ENV:
         'Cookie': COOKIE_ENV
     }
 
+    response = None
     try:
-        response = requests.post(url, headers=headers,impersonate="chrome110")
+        response = requests.post(url, headers=headers, impersonate="chrome110")
         response_data = response.json()
         print(response_data)
-        print(COOKIE_ENV)
-        message = response_data.get('message')
+        message = response_data.get('message', '无返回消息')
         success = response_data.get('success')
-        send("nodeseek签到", message)
-        if success == "true":
+
+        if hadsend:
+            send("nodeseek签到", message)
+
+        if str(success).lower() == "true":
             print(message)
             if telegram_bot_token and chat_id:
                 telegram_Bot(telegram_bot_token, chat_id, message)
@@ -86,6 +98,7 @@ if COOKIE_ENV:
                 pushplus_ts(pushplus_token, "nodeseek签到", message)
     except Exception as e:
         print("发生异常:", e)
-        print("实际响应内容:", response.text)
+        if response is not None:
+            print("实际响应内容:", response.text)
 else:
     print("请先设置Cookie")
