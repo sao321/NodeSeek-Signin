@@ -3,6 +3,7 @@ name: nodeseek鸡腿签到
 on: 
   schedule:
     - cron: '01 01 * * *'  # 每天凌晨 12 点执行 
+  workflow_dispatch:
 
 jobs:
   run-nodeseek-sign:
